@@ -2,9 +2,11 @@ package com.saadanis.calc.ls;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.antlr.v4.runtime.Token;
 import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
 import com.saadanis.calc.ast.CalcParser.SyntaxError;
@@ -57,6 +59,27 @@ public class CalcTextDocumentService implements TextDocumentService {
         this.clientLogger.logMessage("Operation '" + "text/didSave" +
                 "' {fileUri: '" + fileUri + "'} Saved");
 
+	}
+	
+	@Override
+	public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams completionParams) {
+		// Provide completion item.
+        return CompletableFuture.supplyAsync(() -> {
+            List<CompletionItem> completionItems = new ArrayList<>();
+            try {
+                CompletionItem completionItem = new CompletionItem();
+                completionItem.setInsertText("set m = (c*2) + (e*8) // oh wow, a comment.");
+                completionItem.setLabel("set m");
+                completionItem.setKind(CompletionItemKind.Snippet);
+                completionItem.setDetail("set m\n this will complete a card-coded function.");
+                completionItems.add(completionItem);
+            } catch (Exception e) {
+                //TODO: Handle the exception.
+            }
+
+            // Return the list of completion items.
+            return Either.forLeft(completionItems);
+        });
 	}
 	
 	private void parseAndPublishDiagnostics(String fileUri, String text) {
