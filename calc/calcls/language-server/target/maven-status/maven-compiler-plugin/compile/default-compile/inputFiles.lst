@@ -1,0 +1,12 @@
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/ls/langserver/CalcWorkspaceService.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/calc/ExecVisitor.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/ls/langserver/CalcLanguageServer.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/ast/.antlr/CalcLexer.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/ast/.antlr/CalcParser.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/ast/CalcParser.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/calc/CalcRun.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/ls/langserver/CalcTextDocumentService.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/ast/CalcLexer.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/ls/langserver/LSClientLogger.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/ast/CalcVisitor.java
+/Users/saad/eclipse-workspace/calcls/language-server/src/main/java/com/saadanis/calc/ast/CalcBaseVisitor.java
