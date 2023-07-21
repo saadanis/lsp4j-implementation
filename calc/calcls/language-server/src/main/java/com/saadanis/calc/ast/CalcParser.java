@@ -169,7 +169,8 @@ public class CalcParser extends Parser {
 
 		ANTLRErrorListener listener = getErrorListenerDispatch();
 		listener.syntaxError(this, offendingToken, line, charPositionInLine, msg, e);
-		_listOfSyntaxErrors.add(new  SyntaxError(offendingToken, line, charPositionInLine, msg));
+		
+		_listOfSyntaxErrors.add(new SyntaxError(offendingToken, msg));
 	}
 	
 	public List<SyntaxError> getListOfSyntaxErrors() {
@@ -179,14 +180,10 @@ public class CalcParser extends Parser {
 	public static class SyntaxError {
 		
 		public Token offendingToken;
-		public int line;
-		public int charPositionInLine;
 		public String msg;
 		
-		public SyntaxError(Token offendingToken, int line, int charPositionInLine, String msg) {
+		public SyntaxError(Token offendingToken, String msg) {
 			this.offendingToken = offendingToken;
-			this.line = line;
-			this.charPositionInLine = charPositionInLine;
 			this.msg = msg;
 		}
 	}
