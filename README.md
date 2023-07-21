@@ -1,1 +1,2 @@
-# Implementation of a Language Server using LSP4J
+# Language Server Implementation Using LSP4J
+
