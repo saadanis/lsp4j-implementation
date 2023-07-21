@@ -1,2 +1,2 @@
 mvn clean install
-cp launcher/target/launcher.jar ~/Desktop/calcplugin/launcher/launcher.jar
+cp launcher/target/launcher.jar  ../calcplugin/launcher/launcher.jar
