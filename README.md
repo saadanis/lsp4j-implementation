@@ -1,1 +1,1 @@
-# lsp-is-fun
+# Language Server Implementation
