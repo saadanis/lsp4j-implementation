@@ -1,6 +1,6 @@
 // Generated from src/ast/Fun.g4 by ANTLR 4.9.1
 
-package ast;
+	package ast;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 

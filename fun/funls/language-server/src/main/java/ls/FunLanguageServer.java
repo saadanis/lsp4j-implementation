@@ -6,6 +6,7 @@ import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
@@ -38,8 +39,10 @@ public class FunLanguageServer implements LanguageServer, LanguageClientAware {
         this.clientCapabilities = params.getCapabilities();
         
         if (!isDynamicCompletionRegistration()) {
-        	response.getCapabilities().setCompletionProvider(new CompletionOptions());
+        response.getCapabilities().setCompletionProvider(new CompletionOptions());
         }
+        
+        response.getCapabilities().setSemanticTokensProvider(new SemanticTokensWithRegistrationOptions());
         
         return CompletableFuture.supplyAsync(() -> response);
 	}

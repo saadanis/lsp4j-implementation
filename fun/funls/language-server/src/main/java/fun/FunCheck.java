@@ -12,13 +12,8 @@ package fun;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 
 import ast.*;
-import ast.FunParser.ContextualError;
-import ast.FunParser.DiagnosticError;
-import ast.FunParser.SyntaxError;
 
 public class FunCheck {
 
@@ -87,9 +82,6 @@ public class FunCheck {
 	}
 
 	private static class FunException extends Exception {
-		
-		private static final long serialVersionUID = 667210187252387125L;
-		
 	}
 
 }

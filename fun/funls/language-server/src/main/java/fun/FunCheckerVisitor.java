@@ -13,20 +13,17 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.antlr.v4.runtime.misc.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import ast.*;
-import ast.FunParser.ContextualError;
 
 public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements FunVisitor<Type> {
 
 	// Contextual errors
 
-	private int errorCount = 0;
-	private List<ContextualError> contextualErrors = new ArrayList<>();
+	protected int errorCount = 0;
 
-	private CommonTokenStream tokens;
+	protected CommonTokenStream tokens;
 
 	// Constructor
 
@@ -34,7 +31,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    tokens = toks;
 	}
 
-	private void reportError (String message,
+	protected void reportError (String message,
 	                          ParserRuleContext ctx) {
 	// Print an error message relating to the given 
 	// part of the AST.
@@ -49,17 +46,13 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
                                finishLine + ":" + finishCol
 		   + " " + message);
 		errorCount++;
-		contextualErrors.add(new ContextualError(message, startLine, startCol, finishCol));
 	}
 
 	public int getNumberOfContextualErrors () {
 	// Return the total number of errors so far detected.
 		return errorCount;
 	}
-	
-	public List<ContextualError> getListOfContextualErrors() {
-		return contextualErrors;
-	}
+
 
 	// Scope checking
 

@@ -12,13 +12,8 @@ package fun;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 
 import ast.*;
-import ast.FunParser.ContextualError;
-import ast.FunParser.DiagnosticError;
-import ast.FunParser.SyntaxError;
 
 public class FunRun {
 
@@ -101,28 +96,6 @@ public class FunRun {
 		out.println(objectprog.showCode());
 		return objectprog;
 	}
-	
-    public static List<DiagnosticError> diagnostics (String text) throws Exception {
-    	
-    	List<DiagnosticError> errors = new ArrayList<>();
-    	
-    	FunLexer lexer = new FunLexer(CharStreams.fromString(text));
-		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		FunParser parser = new FunParser(tokens);
-		ParseTree tree = parser.program();
-	
-		List<SyntaxError> syntaxErrors = parser.getListOfSyntaxErrors();
-    	
-    	FunCheckerVisitor checker = new FunCheckerVisitor(tokens);
-    	checker.visit(tree);
-    	
-    	List<ContextualError> contextualErrors = checker.getListOfContextualErrors();
-    	
-    	errors.addAll(syntaxErrors);
-    	errors.addAll(contextualErrors);
-    	
-    	return errors;
-    }
 
 	private static class FunException extends Exception {
 	}

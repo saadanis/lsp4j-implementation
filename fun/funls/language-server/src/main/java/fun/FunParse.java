@@ -12,10 +12,8 @@ package fun;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import java.io.*;
-import java.util.List;
 
 import ast.*;
-import ast.FunParser.SyntaxError;
 
 public class FunParse {
 
@@ -38,17 +36,6 @@ public class FunParse {
 		} catch (Exception x) {
 			x.printStackTrace(out);
 		}
-	}
-	
-	public static List<SyntaxError> syntacticParse(String text) throws Exception {
-		
-		FunLexer lexer = new FunLexer(CharStreams.fromString(text));
-		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		FunParser parser = new FunParser(tokens);
-		
-		parser.program();
-		
-		return parser.getListOfSyntaxErrors();
 	}
 
 	private static ParseTree syntacticAnalyse (String filename)

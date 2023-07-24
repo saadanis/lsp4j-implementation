@@ -8,9 +8,9 @@ import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
-import ast.FunParser.DiagnosticError;
-import ast.FunParser.SyntaxError;
-import fun.FunRun;
+import mods.ModifiedFunParser.DiagnosticError;
+import mods.ModifiedFunParser.SyntaxError;
+import mods.ModifiedFunRun;
 
 //import com.saadanis.calc.ast.CalcParser.SyntaxError;
 //import com.saadanis.calc.calc.CalcRun;
@@ -27,9 +27,16 @@ public class FunTextDocumentService implements TextDocumentService {
 	
 	@Override
 	public void didOpen(DidOpenTextDocumentParams params) {
+		
+		String fileUri = params.getTextDocument().getUri();
+		
 		this.clientLogger.logMessage("Operation '" + "text/didOpen" +
-                "' {fileUri: '" + params.getTextDocument().getUri() + "'} opened");
-
+                "' {fileUri: '" + fileUri + "'} opened");
+		if (params.getTextDocument() != null) {
+			String text = params.getTextDocument().getText();
+			parseAndPublishDiagnostics(fileUri, text);
+		}
+	
 	}
 	
 	@Override
@@ -61,6 +68,7 @@ public class FunTextDocumentService implements TextDocumentService {
 		
         this.clientLogger.logMessage("Operation '" + "text/didSave" +
                 "' {fileUri: '" + fileUri + "'} Saved");
+        this.clientLogger.logMessage(params.toString());
 
 	}
 	
@@ -85,6 +93,16 @@ public class FunTextDocumentService implements TextDocumentService {
         });
 	}
 	
+
+	@Override
+	public CompletableFuture<SemanticTokens> semanticTokensFull(SemanticTokensParams params) {
+		// TODO Auto-generated method stub
+		
+		this.clientLogger.logMessage(params.toString());
+		
+		return TextDocumentService.super.semanticTokensFull(params);
+	}
+
 	private void parseAndPublishDiagnostics(String fileUri, String text) {
 		
 		List<Diagnostic> diagnostics = new ArrayList<>();
@@ -93,10 +111,8 @@ public class FunTextDocumentService implements TextDocumentService {
 			
 //			// Get the list of syntax errors.
 //			List<SyntaxError> errors = FunParse.syntacticParse(text);
-			// TODO: contextual analysis.
-//			this.clientLogger.logMessage("contextual errors: " + FunCheck.contextualDiagnostics(text));
 			
-			List <DiagnosticError> errors = FunRun.diagnostics(text);
+			List <DiagnosticError> errors = ModifiedFunRun.diagnostics(text);
 //			
 //			// For each syntax error, log the error and create a diagnostic.
 			for (DiagnosticError error: errors) {
@@ -109,9 +125,9 @@ public class FunTextDocumentService implements TextDocumentService {
 				
 				String errorType = "";
 				if (error instanceof SyntaxError)
-					errorType = "SyntaxError";
+					errorType = "Syntax";
 				else
-					errorType = "ContextualError";
+					errorType = "Context";
 				
 
 				// Log the error.
@@ -132,7 +148,7 @@ public class FunTextDocumentService implements TextDocumentService {
 		        				),
 		        		message,
 		        		DiagnosticSeverity.Error,
-		        		""));
+		        		errorType));
 			}
 
 		} catch (Exception e) {
