@@ -38,11 +38,11 @@ ast/FunParser$IfContext.class
 ast/FunParser$BoolContext.class
 ast/CalcParser$ProgContext.class
 ast/FunParser$IdContext.class
+mods/UsageTable.class
 ast/FunParser$FormalContext.class
 ast/FunParser$FuncContext.class
 ast/FunParser$NumContext.class
 ast/FunParser$Sec_exprContext.class
-mods/ModifiedFunCheckerVisitor.class
 ast/FunParser$ActualContext.class
 fun/FunParse.class
 ast/CalcParser$SetContext.class
@@ -59,6 +59,7 @@ ast/FunParser$ProgContext.class
 ast/CalcLexer.class
 ast/CalcParser$OpContext.class
 ast/FunParser$SeqContext.class
+mods/ModifiedFunParser$ContextualWarning.class
 mods/ModifiedFunRun.class
 ast/CalcParser$VarContext.class
 ast/CalcParser$IdContext.class

@@ -22,7 +22,7 @@ public class SymbolTable<A> {
 	// unique.
 
 	private HashMap<String,A> globals, locals;
-
+	
 	public SymbolTable () {
 		globals = new HashMap<String,A>();
 		locals = null;  // initially disabled

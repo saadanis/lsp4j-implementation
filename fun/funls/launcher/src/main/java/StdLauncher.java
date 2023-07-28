@@ -15,6 +15,7 @@ public class StdLauncher {
 	}
 
 	private static void startServer(InputStream in, OutputStream out) throws ExecutionException, InterruptedException {
+				
 		FunLanguageServer server = new FunLanguageServer();
 
 		Launcher<LanguageClient> launcher = Launcher.createLauncher(server, LanguageClient.class, in, out);

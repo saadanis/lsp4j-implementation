@@ -13,16 +13,23 @@ import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.antlr.v4.runtime.misc.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import ast.*;
+import mods.UsageTable;
+import mods.ModifiedFunParser.ContextualError;
+import mods.ModifiedFunParser.ContextualWarning;
 
 public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements FunVisitor<Type> {
 
 	// Contextual errors
 
 	protected int errorCount = 0;
-
+	private List<ContextualError> contextualErrors = new ArrayList<>();
+	private List<ContextualWarning> contextualWarnings = new ArrayList<>();
+	
 	protected CommonTokenStream tokens;
 
 	// Constructor
@@ -31,7 +38,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    tokens = toks;
 	}
 
-	protected void reportError (String message,
+	private void reportError (String message,
 	                          ParserRuleContext ctx) {
 	// Print an error message relating to the given 
 	// part of the AST.
@@ -46,18 +53,46 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
                                finishLine + ":" + finishCol
 		   + " " + message);
 		errorCount++;
+		
+	// Add error to list of contextual errors.
+		contextualErrors.add(new ContextualError(message, startLine, startCol, finishCol));
+	}
+	
+	private void reportWarning (String message, ParserRuleContext ctx) {
+		Interval interval = ctx.getSourceInterval();
+	    Token start = tokens.get(interval.a);
+	    Token finish = tokens.get(interval.b);
+	    int startLine = start.getLine();
+	    int startCol = start.getCharPositionInLine();
+	    int finishLine = finish.getLine();
+	    int finishCol = finish.getCharPositionInLine();
+	    System.err.println(startLine + ":" + startCol + "-" +
+	    		finishLine + ":" + finishCol + " " + message);
+	    
+	    contextualWarnings.add(new ContextualWarning(message, startLine, startCol, finishCol));
+	    
 	}
 
 	public int getNumberOfContextualErrors () {
 	// Return the total number of errors so far detected.
 		return errorCount;
 	}
-
+	
+	public List<ContextualError> getListOfContextualErrors() {	
+	// Return list of contextual errors.
+		return contextualErrors;
+	}
+	
+	public List<ContextualWarning> getListOfContextualWarnings() {
+		return contextualWarnings;
+	}
 
 	// Scope checking
 
 	private SymbolTable<Type> typeTable =
 	   new SymbolTable<Type>();
+	
+	private UsageTable usageTable = new UsageTable();
 
 	private void predefine () {
 	// Add predefined procedures to the type table.
@@ -72,6 +107,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	// Add id with its type to the type table, checking 
 	// that id is not already declared in the same scope.
 		boolean ok = typeTable.put(id, type);
+		usageTable.put(id, decl);
 		if (!ok)
 			reportError(id + " is redeclared", decl);
 	}
@@ -79,6 +115,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	private Type retrieve (String id, ParserRuleContext occ) {
 	// Retrieve id's type from the type table.
 		Type type = typeTable.get(id);
+		usageTable.use(id);
 		if (type == null) {
 			reportError(id + " is undeclared", occ);
 			return Type.ERROR;
@@ -168,6 +205,12 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    visitChildren(ctx);
 	    Type tmain = retrieve("main", ctx);
 	    checkType(MAINTYPE, tmain, ctx);
+	    
+	    HashMap<String,ParserRuleContext> unused = usageTable.exitScope();
+	    unused.forEach((id, call) -> {
+	    	reportWarning(id + " is declared but never used.", call);
+	    	});
+	    
 	    return null;
 	}
 
@@ -179,6 +222,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	 */
 	public Type visitProc(FunParser.ProcContext ctx) {
 	    typeTable.enterLocalScope();
+	    usageTable.enterScope();
 	    Type t;
 	    FunParser.Formal_declContext fd = ctx.formal_decl();
 	    if (fd != null)
@@ -189,9 +233,13 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    define(ctx.ID().getText(), proctype, ctx);
 	    List<FunParser.Var_declContext> var_decl = ctx.var_decl();
 	    for (FunParser.Var_declContext vd : var_decl)
-		visit(vd);
+			visit(vd);
 	    visit(ctx.seq_com());
 	    typeTable.exitLocalScope();
+	    HashMap<String,ParserRuleContext> unused = usageTable.exitScope();
+	    unused.forEach((id, call) -> {
+	    	reportWarning(id + " is declared but never used.", call);
+	    	});
 	    define(ctx.ID().getText(), proctype, ctx);
 	    return null;
 	}
@@ -204,6 +252,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	 */
 	public Type visitFunc(FunParser.FuncContext ctx) {
 	    typeTable.enterLocalScope();
+	    usageTable.enterScope();
 	    Type t1 = visit(ctx.type());
 	    Type t2;
 	    FunParser.Formal_declContext fd = ctx.formal_decl();
@@ -220,6 +269,10 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    Type returntype = visit(ctx.expr());
 	    checkType(t1, returntype, ctx);
 	    typeTable.exitLocalScope();
+	    HashMap<String,ParserRuleContext> unused = usageTable.exitScope();
+	    unused.forEach((id, call) -> {
+	    	reportWarning(id + " is declared but never used.", call);
+	    	});
 	    define(ctx.ID().getText(), functype, ctx);
 	    return null;
 	}

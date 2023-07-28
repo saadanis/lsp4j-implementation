@@ -8,6 +8,8 @@ import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
+import mods.ModifiedFunParser.ContextualError;
+import mods.ModifiedFunParser.ContextualWarning;
 import mods.ModifiedFunParser.DiagnosticError;
 import mods.ModifiedFunParser.SyntaxError;
 import mods.ModifiedFunRun;
@@ -50,6 +52,13 @@ public class FunTextDocumentService implements TextDocumentService {
 		if (!params.getContentChanges().isEmpty()) {
 			String changedText = params.getContentChanges().get(0).getText();
 			parseAndPublishDiagnostics(fileUri, changedText);
+			try {
+//				ModifiedFunRun.runTheEntireThing(changedText);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+//				e.printStackTrace();
+				this.clientLogger.logMessage(e.getLocalizedMessage());
+			}
 		}
 		
 	}
@@ -68,7 +77,7 @@ public class FunTextDocumentService implements TextDocumentService {
 		
         this.clientLogger.logMessage("Operation '" + "text/didSave" +
                 "' {fileUri: '" + fileUri + "'} Saved");
-        this.clientLogger.logMessage(params.toString());
+//        this.clientLogger.logMessage(params.toString());
 
 	}
 	
@@ -123,11 +132,16 @@ public class FunTextDocumentService implements TextDocumentService {
 				int charStartPositionInLine = error.charStartPositionInLine;
 				int charEndPositionInLine = error.charEndPositionInLine;
 				
+				DiagnosticSeverity severity = DiagnosticSeverity.Error;
 				String errorType = "";
-				if (error instanceof SyntaxError)
-					errorType = "Syntax";
-				else
+				if (error instanceof ContextualWarning) {
+					severity = DiagnosticSeverity.Warning;
+					errorType = "Warning";
+				}
+				else if (error instanceof ContextualError)
 					errorType = "Context";
+				else
+					errorType = "Syntax";
 				
 
 				// Log the error.
@@ -147,7 +161,7 @@ public class FunTextDocumentService implements TextDocumentService {
 		        						line - 1, charEndPositionInLine)
 		        				),
 		        		message,
-		        		DiagnosticSeverity.Error,
+		        		severity,
 		        		errorType));
 			}
 

@@ -68,4 +68,13 @@ public class ModifiedFunParser extends FunParser {
 			this.charEndPositionInLine = charEndPositionInLine + 1;
 		}
 	}
+	
+	public static class ContextualWarning extends DiagnosticError {
+		public ContextualWarning(String message, int line, int charStartPositionInLine, int charEndPositionInLine) {
+			this.message = message;
+			this.line = line;
+			this.charStartPositionInLine = charStartPositionInLine;
+			this.charEndPositionInLine = charEndPositionInLine + 1;
+		}
+	}
 }
