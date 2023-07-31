@@ -34,6 +34,7 @@ public class SymbolTable<A> {
 	// (otherwise). Return true iff id is unique.
 		HashMap<String,A> scope =
 			(locals != null ? locals : globals);
+		
 		if (scope.get(id) == null) {
 			scope.put(id, attr);
 			return true;
@@ -80,5 +81,13 @@ public class SymbolTable<A> {
 		if (locals != null)
 			s += "Locals: " + locals + "\n";
 		return s;
+	}
+	
+	public HashMap<String,A> getGlobals() {
+		return globals;
+	}
+	
+	public HashMap<String,A> getLocals() {
+		return locals;
 	}
 }

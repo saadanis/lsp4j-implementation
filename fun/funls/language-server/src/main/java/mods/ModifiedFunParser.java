@@ -74,7 +74,8 @@ public class ModifiedFunParser extends FunParser {
 			this.message = message;
 			this.line = line;
 			this.charStartPositionInLine = charStartPositionInLine;
-			this.charEndPositionInLine = charEndPositionInLine + 1;
+//			this.charEndPositionInLine = charEndPositionInLine + 1;
+			this.charEndPositionInLine = 1000;
 		}
 	}
 }

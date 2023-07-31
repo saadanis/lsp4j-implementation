@@ -1,11 +1,14 @@
 package mods;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.eclipse.lsp4j.Position;
 
 import ast.FunLexer;
 import fun.FunCheckerVisitor;
@@ -20,6 +23,7 @@ import mods.ModifiedFunParser.SyntaxError;
 public class ModifiedFunRun extends FunRun {
 	
 	private static boolean tracing = false;
+	private static boolean showWarningsWithErrors = true;
 	
     public static List<DiagnosticError> diagnostics (String text) throws Exception {
     	
@@ -40,10 +44,37 @@ public class ModifiedFunRun extends FunRun {
     	
     	errors.addAll(syntaxErrors);
     	errors.addAll(contextualErrors);
-    	if (checker.getNumberOfContextualErrors() == 0)
+
+    	if (showWarningsWithErrors)
     		errors.addAll(contextualWarnings);
+    	else
+    		if (errors.isEmpty())
+    			errors.addAll(contextualWarnings);
     	
     	return errors;
+    }
+    
+    public static List<String> test(String filename, Position position) {
+    	
+		try {
+			
+			FunLexer lexer = new FunLexer(CharStreams.fromFileName(filename));
+			CommonTokenStream tokens = new CommonTokenStream(lexer);
+			ModifiedFunParser parser = new ModifiedFunParser(tokens);
+			FunCheckerVisitor checker = new FunCheckerVisitor(tokens, position);
+			
+			ParseTree tree = parser.program();
+			checker.visit(tree);
+			
+			return checker.getListOfCompletionVariables();
+			
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+			System.err.println(e.getLocalizedMessage());
+		}
+		
+		return new ArrayList<String>();
     }
     
     public static String runTheEntireThing (String text) throws Exception {

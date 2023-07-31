@@ -11,6 +11,7 @@ package fun;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
+import org.eclipse.lsp4j.Position;
 import org.antlr.v4.runtime.misc.*;
 
 import java.util.ArrayList;
@@ -31,11 +32,20 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	private List<ContextualWarning> contextualWarnings = new ArrayList<>();
 	
 	protected CommonTokenStream tokens;
+	protected Position position;
+	
+	private List<String> completionVariables = new ArrayList<>();
+	private SymbolTable<Integer> variableTable = new SymbolTable<Integer>();
 
 	// Constructor
 
 	public FunCheckerVisitor(CommonTokenStream toks) {
 	    tokens = toks;
+	}
+	
+	public FunCheckerVisitor(CommonTokenStream toks, Position pos) {
+		tokens = toks;
+		position = pos;
 	}
 
 	private void reportError (String message,
@@ -49,9 +59,9 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    int startCol = start.getCharPositionInLine();
 	    int finishLine = finish.getLine();
 	    int finishCol = finish.getCharPositionInLine();
-	    System.err.println(startLine + ":" + startCol + "-" +
-                               finishLine + ":" + finishCol
-		   + " " + message);
+	    System.err.println("ERR  " + startLine + ":" + startCol + "-" +
+	    		finishLine + ":" + finishCol + " " + message);
+	    
 		errorCount++;
 		
 	// Add error to list of contextual errors.
@@ -66,7 +76,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    int startCol = start.getCharPositionInLine();
 	    int finishLine = finish.getLine();
 	    int finishCol = finish.getCharPositionInLine();
-	    System.err.println(startLine + ":" + startCol + "-" +
+	    System.err.println("WARN " + startLine + ":" + startCol + "-" +
 	    		finishLine + ":" + finishCol + " " + message);
 	    
 	    contextualWarnings.add(new ContextualWarning(message, startLine, startCol, finishCol));
@@ -78,7 +88,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 		return errorCount;
 	}
 	
-	public List<ContextualError> getListOfContextualErrors() {	
+	public List<ContextualError> getListOfContextualErrors() {
 	// Return list of contextual errors.
 		return contextualErrors;
 	}
@@ -86,7 +96,33 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	public List<ContextualWarning> getListOfContextualWarnings() {
 		return contextualWarnings;
 	}
+	
+	public List<String> getListOfCompletionVariables() {
+		return completionVariables;
+	}
 
+	private void addCompletionVariables(ParserRuleContext currentScopeContext, HashMap<String, Integer> scope) {
+	    if (position != null) {
+	    	int positionLine = position.getLine();
+	    	int scopeStart = currentScopeContext.getStart().getLine();
+	    	int scopeStop = currentScopeContext.getStop().getLine();
+	    	
+//	    	If the cursor is in the same scope...
+	    	if (positionLine >= scopeStart && positionLine <= scopeStop)
+	    		
+//	    		For each variable collected in that scope...
+	    		scope.forEach((id, line) -> {
+	    			
+//	    			If the variable is declared above the cursor...
+	    			if (line <= positionLine) {
+	    				
+//	    				Add the variable to the completionVariables list.
+	    				completionVariables.add(id);
+	    			}
+	    		});
+	    }
+	}
+	
 	// Scope checking
 
 	private SymbolTable<Type> typeTable =
@@ -106,10 +142,11 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	                     ParserRuleContext decl) {
 	// Add id with its type to the type table, checking 
 	// that id is not already declared in the same scope.
+		
 		boolean ok = typeTable.put(id, type);
-		usageTable.put(id, decl);
 		if (!ok)
 			reportError(id + " is redeclared", decl);
+		
 	}
 
 	private Type retrieve (String id, ParserRuleContext occ) {
@@ -201,12 +238,16 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	 * @return the visitor result
 	 */
 	public Type visitProg(FunParser.ProgContext ctx) {
+		
 	    predefine();
 	    visitChildren(ctx);
 	    Type tmain = retrieve("main", ctx);
 	    checkType(MAINTYPE, tmain, ctx);
 	    
 	    HashMap<String,ParserRuleContext> unused = usageTable.exitScope();
+	    
+	    addCompletionVariables(ctx, variableTable.getGlobals());
+	    
 	    unused.forEach((id, call) -> {
 	    	reportWarning(id + " is declared but never used.", call);
 	    	});
@@ -222,6 +263,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	 */
 	public Type visitProc(FunParser.ProcContext ctx) {
 	    typeTable.enterLocalScope();
+	    variableTable.enterLocalScope();
 	    usageTable.enterScope();
 	    Type t;
 	    FunParser.Formal_declContext fd = ctx.formal_decl();
@@ -231,16 +273,23 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 		t = Type.VOID;
 	    Type proctype = new Type.Mapping(t, Type.VOID);
 	    define(ctx.ID().getText(), proctype, ctx);
+
 	    List<FunParser.Var_declContext> var_decl = ctx.var_decl();
 	    for (FunParser.Var_declContext vd : var_decl)
 			visit(vd);
 	    visit(ctx.seq_com());
 	    typeTable.exitLocalScope();
+	    
+	    addCompletionVariables(ctx, variableTable.getLocals());
+	    variableTable.exitLocalScope();
+	    
 	    HashMap<String,ParserRuleContext> unused = usageTable.exitScope();
 	    unused.forEach((id, call) -> {
 	    	reportWarning(id + " is declared but never used.", call);
 	    	});
 	    define(ctx.ID().getText(), proctype, ctx);
+		usageTable.put(ctx.ID().getText(), ctx);
+		variableTable.put(ctx.ID().getText(), ctx.getStart().getLine());
 	    return null;
 	}
 
@@ -252,7 +301,10 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	 */
 	public Type visitFunc(FunParser.FuncContext ctx) {
 	    typeTable.enterLocalScope();
+	    variableTable.enterLocalScope();
+	    
 	    usageTable.enterScope();
+	    
 	    Type t1 = visit(ctx.type());
 	    Type t2;
 	    FunParser.Formal_declContext fd = ctx.formal_decl();
@@ -262,6 +314,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 		t2 = Type.VOID;
 	    Type functype = new Type.Mapping(t2, t1);
 	    define(ctx.ID().getText(), functype, ctx);
+	    
 	    List<FunParser.Var_declContext> var_decl = ctx.var_decl();
 	    for (FunParser.Var_declContext vd : var_decl)
 		visit(vd);
@@ -269,11 +322,17 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    Type returntype = visit(ctx.expr());
 	    checkType(t1, returntype, ctx);
 	    typeTable.exitLocalScope();
+	    
+	    addCompletionVariables(ctx, variableTable.getLocals());
+	    variableTable.exitLocalScope();
+	    
 	    HashMap<String,ParserRuleContext> unused = usageTable.exitScope();
 	    unused.forEach((id, call) -> {
 	    	reportWarning(id + " is declared but never used.", call);
 	    	});
 	    define(ctx.ID().getText(), functype, ctx);
+		usageTable.put(ctx.ID().getText(), ctx);
+		variableTable.put(ctx.ID().getText(), ctx.getStart().getLine());
 	    return null;
 	}
 
@@ -289,6 +348,8 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    if (tc != null) {
 		t = visit(tc);
 		define(ctx.ID().getText(), t, ctx);
+		usageTable.put(ctx.ID().getText(), ctx);
+		variableTable.put(ctx.ID().getText(), ctx.getStart().getLine());
 	    }
 	    else
 		t = Type.VOID;
@@ -305,6 +366,8 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    Type t1 = visit(ctx.type());
 	    Type t2 = visit(ctx.expr());
 	    define(ctx.ID().getText(), t1, ctx);
+		usageTable.put(ctx.ID().getText(), ctx);
+		variableTable.put(ctx.ID().getText(), ctx.getStart().getLine());
 	    checkType(t1, t2, ctx);
 	    return null;
 	}

@@ -42,8 +42,6 @@ public class FunLanguageServer implements LanguageServer, LanguageClientAware {
         response.getCapabilities().setCompletionProvider(new CompletionOptions());
         }
         
-        response.getCapabilities().setSemanticTokensProvider(new SemanticTokensWithRegistrationOptions());
-        
         return CompletableFuture.supplyAsync(() -> response);
 	}
 	

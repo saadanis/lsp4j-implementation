@@ -23,18 +23,15 @@ public class UsageTable {
 	}
 	
 	public void use(String id) {
+		
 		if (locals != null && locals.get(id) != null)
 			locals.remove(id);
 		else
 			globals.remove(id);
 	}
 	
-	public void useLocal(String id) {
-		if (locals != null)
-			locals.remove(id);
-	}
-	
 	public void enterScope() {
+		
 		locals = new HashMap<String, ParserRuleContext>();
 	}
 	

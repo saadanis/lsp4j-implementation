@@ -1,13 +1,18 @@
 package ls;
 
+import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.antlr.v4.runtime.Vocabulary;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
+import mods.ModifiedFunParser;
 import mods.ModifiedFunParser.ContextualError;
 import mods.ModifiedFunParser.ContextualWarning;
 import mods.ModifiedFunParser.DiagnosticError;
@@ -84,19 +89,66 @@ public class FunTextDocumentService implements TextDocumentService {
 	@Override
 	public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams completionParams) {
 		// Provide completion item.
+		
+		System.err.println(completionParams.getPosition().getLine());
+		System.err.println(completionParams.getTextDocument().getUri());
+		
         return CompletableFuture.supplyAsync(() -> {
             List<CompletionItem> completionItems = new ArrayList<>();
-//            try {
-//                CompletionItem completionItem = new CompletionItem();
-//                completionItem.setInsertText("set m = (c*2) + (e*8) // oh wow, a comment.");
-//                completionItem.setLabel("set m");
-//                completionItem.setKind(CompletionItemKind.Snippet);
-//                completionItem.setDetail("set m\n this will complete a card-coded function.");
-//                completionItems.add(completionItem);
-//            } catch (Exception e) {
-//                //TODO: Handle the exception.
-//            }
-
+            
+            try {
+				String filename = new File(new URI(completionParams.getTextDocument().getUri())).getPath();
+				Position position = completionParams.getPosition();
+				List<String> completionVariables = ModifiedFunRun.test(filename, position);
+				
+	            
+	            for (String variable: completionVariables) {
+	            	CompletionItem completionItem = new CompletionItem();
+	                completionItem.setInsertText(variable);
+	                completionItem.setLabel(variable);
+	                completionItem.setKind(CompletionItemKind.Variable);
+	                completionItems.add(completionItem);
+	            }
+				
+			} catch (URISyntaxException e1) {
+				// TODO Auto-generated catch block
+			}
+            
+            for (String item: new String[] {
+            		"else", "false", "true", "func", "if", "proc", "return",
+            		"not", "while", "bool", "int", "read()"
+        		}) {
+            	CompletionItem completionItem = new CompletionItem();
+                completionItem.setInsertText(item);
+                completionItem.setLabel(item);
+                if (item.equals("bool") || item.equals("int"))
+                	completionItem.setKind(CompletionItemKind.Class);
+                else if (item.equals("write()") || item.equals("read()"))
+                	completionItem.setKind(CompletionItemKind.Function);
+                else
+                	completionItem.setKind(CompletionItemKind.Keyword);
+                completionItems.add(completionItem);
+            }
+            
+            {
+            	CompletionItem completionItem = new CompletionItem();
+                completionItem.setInsertText("write($1)");
+                completionItem.setLabel("write()");
+                completionItem.setKind(CompletionItemKind.Function);
+                completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+                completionItems.add(completionItem);
+            }
+            
+            {
+                CompletionItem completionItem = new CompletionItem();
+                completionItem.setInsertText("main():\n\t$1\n.");
+                completionItem.setLabel("main()");
+                completionItem.setKind(CompletionItemKind.Snippet);
+//                completionItem.setInsertTextMode(InsertTextMode.AdjustIndentation);
+                completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+                completionItems.add(completionItem);
+            }
+            
             // Return the list of completion items.
             return Either.forLeft(completionItems);
         });
@@ -112,14 +164,12 @@ public class FunTextDocumentService implements TextDocumentService {
 		return TextDocumentService.super.semanticTokensFull(params);
 	}
 
+	
 	private void parseAndPublishDiagnostics(String fileUri, String text) {
 		
 		List<Diagnostic> diagnostics = new ArrayList<>();
 		
 		try {
-			
-//			// Get the list of syntax errors.
-//			List<SyntaxError> errors = FunParse.syntacticParse(text);
 			
 			List <DiagnosticError> errors = ModifiedFunRun.diagnostics(text);
 //			
@@ -142,15 +192,6 @@ public class FunTextDocumentService implements TextDocumentService {
 					errorType = "Context";
 				else
 					errorType = "Syntax";
-				
-
-				// Log the error.
-				this.clientLogger.logMessage(
-					errorType + ": " +
-					line + ":" +
-					charStartPositionInLine + ":" +
-					charEndPositionInLine + " " +
-					message);
 				
 				// Create a diagnostic for the error.
 		        diagnostics.add(new Diagnostic(
