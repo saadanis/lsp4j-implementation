@@ -34,7 +34,10 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	protected CommonTokenStream tokens;
 	protected Position position;
 	
-	private List<String> completionVariables = new ArrayList<>();
+//	private List<String> completionVariables = new ArrayList<>();
+//	private List<Type> completionTypes = new ArrayList<>();
+	
+	private HashMap<String, String> completionItems = new HashMap<String, String>();
 	private SymbolTable<Integer> variableTable = new SymbolTable<Integer>();
 
 	// Constructor
@@ -97,8 +100,16 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 		return contextualWarnings;
 	}
 	
-	public List<String> getListOfCompletionVariables() {
-		return completionVariables;
+//	public List<String> getListOfCompletionVariables() {
+//		return completionVariables;
+//	}
+//	
+//	public List<Type> getListOfCompletionTypes() {
+//		return completionTypes;
+//	}
+	
+	public HashMap<String, String> getCompletionItems() {
+		return completionItems;
 	}
 
 	private void addCompletionVariables(ParserRuleContext currentScopeContext, HashMap<String, Integer> scope) {
@@ -117,7 +128,10 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    			if (line <= positionLine) {
 	    				
 //	    				Add the variable to the completionVariables list.
-	    				completionVariables.add(id);
+//	    				completionVariables.add(id);
+//	    				completionTypes.add(typeTable.get(id));
+	    				
+	    				completionItems.put(id, typeTable.get(id).toString());
 	    			}
 	    		});
 	    }
@@ -125,8 +139,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	
 	// Scope checking
 
-	private SymbolTable<Type> typeTable =
-	   new SymbolTable<Type>();
+	private SymbolTable<Type> typeTable = new SymbolTable<Type>();
 	
 	private UsageTable usageTable = new UsageTable();
 
@@ -136,6 +149,9 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 		   new Type.Mapping(Type.VOID, Type.INT));
 		typeTable.put("write",
 		   new Type.Mapping(Type.INT, Type.VOID));
+		
+		variableTable.put("read", 0);
+		variableTable.put("write", 0);
 	}
 
 	private void define (String id, Type type,
@@ -278,10 +294,11 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    for (FunParser.Var_declContext vd : var_decl)
 			visit(vd);
 	    visit(ctx.seq_com());
-	    typeTable.exitLocalScope();
 	    
 	    addCompletionVariables(ctx, variableTable.getLocals());
 	    variableTable.exitLocalScope();
+	    
+	    typeTable.exitLocalScope();
 	    
 	    HashMap<String,ParserRuleContext> unused = usageTable.exitScope();
 	    unused.forEach((id, call) -> {
@@ -321,10 +338,11 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	    visit(ctx.seq_com());
 	    Type returntype = visit(ctx.expr());
 	    checkType(t1, returntype, ctx);
-	    typeTable.exitLocalScope();
 	    
 	    addCompletionVariables(ctx, variableTable.getLocals());
 	    variableTable.exitLocalScope();
+	    
+	    typeTable.exitLocalScope();
 	    
 	    HashMap<String,ParserRuleContext> unused = usageTable.exitScope();
 	    unused.forEach((id, call) -> {

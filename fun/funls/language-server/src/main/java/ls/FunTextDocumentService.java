@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -27,6 +28,11 @@ public class FunTextDocumentService implements TextDocumentService {
 	private FunLanguageServer languageServer;
 	private FunClientLogger clientLogger;
 	
+	private String documentText = "";
+	private String[] keywords = { "else", "false", "true", "func", "if",
+			"proc", "return", "not", "while", "bool", "int"};
+	private String[] types = {"bool", "int"};
+	
 	public FunTextDocumentService(FunLanguageServer languageServer) {
         this.languageServer = languageServer;
         this.clientLogger = FunClientLogger.getInstance();
@@ -40,8 +46,8 @@ public class FunTextDocumentService implements TextDocumentService {
 		this.clientLogger.logMessage("Operation '" + "text/didOpen" +
                 "' {fileUri: '" + fileUri + "'} opened");
 		if (params.getTextDocument() != null) {
-			String text = params.getTextDocument().getText();
-			parseAndPublishDiagnostics(fileUri, text);
+			documentText = params.getTextDocument().getText();
+			parseAndPublishDiagnostics(fileUri, documentText);
 		}
 	
 	}
@@ -56,14 +62,8 @@ public class FunTextDocumentService implements TextDocumentService {
 		
 		if (!params.getContentChanges().isEmpty()) {
 			String changedText = params.getContentChanges().get(0).getText();
-			parseAndPublishDiagnostics(fileUri, changedText);
-			try {
-//				ModifiedFunRun.runTheEntireThing(changedText);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-//				e.printStackTrace();
-				this.clientLogger.logMessage(e.getLocalizedMessage());
-			}
+			documentText = changedText;
+			parseAndPublishDiagnostics(fileUri, documentText);
 		}
 		
 	}
@@ -82,72 +82,64 @@ public class FunTextDocumentService implements TextDocumentService {
 		
         this.clientLogger.logMessage("Operation '" + "text/didSave" +
                 "' {fileUri: '" + fileUri + "'} Saved");
-//        this.clientLogger.logMessage(params.toString());
-
 	}
 	
 	@Override
 	public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams completionParams) {
-		// Provide completion item.
-		
-		System.err.println(completionParams.getPosition().getLine());
-		System.err.println(completionParams.getTextDocument().getUri());
 		
         return CompletableFuture.supplyAsync(() -> {
+        	
             List<CompletionItem> completionItems = new ArrayList<>();
             
-            try {
-				String filename = new File(new URI(completionParams.getTextDocument().getUri())).getPath();
-				Position position = completionParams.getPosition();
-				List<String> completionVariables = ModifiedFunRun.test(filename, position);
-				
-	            
-	            for (String variable: completionVariables) {
-	            	CompletionItem completionItem = new CompletionItem();
-	                completionItem.setInsertText(variable);
-	                completionItem.setLabel(variable);
-	                completionItem.setKind(CompletionItemKind.Variable);
-	                completionItems.add(completionItem);
-	            }
-				
-			} catch (URISyntaxException e1) {
-				// TODO Auto-generated catch block
-			}
-            
-            for (String item: new String[] {
-            		"else", "false", "true", "func", "if", "proc", "return",
-            		"not", "while", "bool", "int", "read()"
-        		}) {
-            	CompletionItem completionItem = new CompletionItem();
-                completionItem.setInsertText(item);
-                completionItem.setLabel(item);
-                if (item.equals("bool") || item.equals("int"))
-                	completionItem.setKind(CompletionItemKind.Class);
-                else if (item.equals("write()") || item.equals("read()"))
+			Position position = completionParams.getPosition();
+			HashMap<String,String> completionVariables = ModifiedFunRun.completion(documentText, position);
+          
+			completionVariables.forEach((id, type) -> {
+				CompletionItem completionItem = new CompletionItem();
+                completionItem.setLabel(id);
+                
+                if (type.equals("int") || type.equals("bool")) {
+                	completionItem.setKind(CompletionItemKind.Variable);
+                	completionItem.setInsertText(id);
+                } else {
                 	completionItem.setKind(CompletionItemKind.Function);
-                else
-                	completionItem.setKind(CompletionItemKind.Keyword);
+                	if (type.startsWith("void")) {
+                		completionItem.setInsertText(id + "()");
+                	} else {
+                		completionItem.setInsertText(id + "($1)");
+                		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+                	}
+                }
+                
                 completionItems.add(completionItem);
-            }
+			});
             
-            {
+            for (String keyword: keywords) {
             	CompletionItem completionItem = new CompletionItem();
-                completionItem.setInsertText("write($1)");
-                completionItem.setLabel("write()");
-                completionItem.setKind(CompletionItemKind.Function);
-                completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+                completionItem.setInsertText(keyword);
+                completionItem.setLabel(keyword);
+                completionItem.setKind(CompletionItemKind.Keyword);
                 completionItems.add(completionItem);
             }
             
-            {
-                CompletionItem completionItem = new CompletionItem();
-                completionItem.setInsertText("main():\n\t$1\n.");
-                completionItem.setLabel("main()");
-                completionItem.setKind(CompletionItemKind.Snippet);
-//                completionItem.setInsertTextMode(InsertTextMode.AdjustIndentation);
-                completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+            for (String type: types) {
+            	CompletionItem completionItem = new CompletionItem();
+                completionItem.setInsertText(type);
+                completionItem.setLabel(type);
+                completionItem.setKind(CompletionItemKind.Class);
                 completionItems.add(completionItem);
             }
+            
+//         	main function snippet generation completion item.
+//            {
+//                CompletionItem completionItem = new CompletionItem();
+//                completionItem.setInsertText("main():\n\t$1\n.");
+//                completionItem.setLabel("main()");
+//                completionItem.setDetail("Generate main() snippet.");
+//                completionItem.setKind(CompletionItemKind.Snippet);
+//                completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+//                completionItems.add(completionItem);
+//            }
             
             // Return the list of completion items.
             return Either.forLeft(completionItems);

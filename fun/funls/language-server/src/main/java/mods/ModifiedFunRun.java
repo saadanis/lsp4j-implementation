@@ -1,12 +1,11 @@
 package mods;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.eclipse.lsp4j.Position;
 
@@ -15,6 +14,7 @@ import fun.FunCheckerVisitor;
 import fun.FunEncoderVisitor;
 import fun.FunRun;
 import fun.SVM;
+import fun.Type;
 import mods.ModifiedFunParser.ContextualError;
 import mods.ModifiedFunParser.ContextualWarning;
 import mods.ModifiedFunParser.DiagnosticError;
@@ -29,53 +29,65 @@ public class ModifiedFunRun extends FunRun {
     	
     	List<DiagnosticError> errors = new ArrayList<>();
     	
-    	FunLexer lexer = new FunLexer(CharStreams.fromString(text));
-		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		ModifiedFunParser parser = new ModifiedFunParser(tokens);
-		ParseTree tree = parser.program();
+    	if (text.length() > 0)
+    		
+	    	try {
+	    	
+		    	FunLexer lexer = new FunLexer(CharStreams.fromString(text));
+				CommonTokenStream tokens = new CommonTokenStream(lexer);
+				
+				ModifiedFunParser parser = new ModifiedFunParser(tokens);
+				ParseTree tree = parser.program();
+			
+				List<SyntaxError> syntaxErrors = parser.getListOfSyntaxErrors();
+				errors.addAll(syntaxErrors);
+		    	
+		    	FunCheckerVisitor checker = new FunCheckerVisitor(tokens);
+		    	checker.visit(tree);
+		    	
+		    	List<ContextualError> contextualErrors = checker.getListOfContextualErrors();
+		    	errors.addAll(contextualErrors);
+		    	
+		    	List<ContextualWarning> contextualWarnings = checker.getListOfContextualWarnings();
 	
-		List<SyntaxError> syntaxErrors = parser.getListOfSyntaxErrors();
-    	
-    	FunCheckerVisitor checker = new FunCheckerVisitor(tokens);
-    	checker.visit(tree);
-    	
-    	List<ContextualError> contextualErrors = checker.getListOfContextualErrors();
-    	List<ContextualWarning> contextualWarnings = checker.getListOfContextualWarnings();
-    	
-    	errors.addAll(syntaxErrors);
-    	errors.addAll(contextualErrors);
-
-    	if (showWarningsWithErrors)
-    		errors.addAll(contextualWarnings);
-    	else
-    		if (errors.isEmpty())
-    			errors.addAll(contextualWarnings);
+	    	if (showWarningsWithErrors)
+	    		errors.addAll(contextualWarnings);
+	    	else
+	    		if (errors.isEmpty())
+	    			errors.addAll(contextualWarnings);
+	    	
+	    	} catch (Exception e) {
+	    		
+	    		System.err.println("ModifiedFunRun:diagnostics: " + e.getLocalizedMessage());
+	    	}
     	
     	return errors;
     }
     
-    public static List<String> test(String filename, Position position) {
+    public static HashMap<String,String> completion(String text, Position position) {
     	
-		try {
-			
-			FunLexer lexer = new FunLexer(CharStreams.fromFileName(filename));
+    	try {
+    		
+	    	FunLexer lexer = new FunLexer(CharStreams.fromString(text));
 			CommonTokenStream tokens = new CommonTokenStream(lexer);
-			ModifiedFunParser parser = new ModifiedFunParser(tokens);
-			FunCheckerVisitor checker = new FunCheckerVisitor(tokens, position);
 			
+			ModifiedFunParser parser = new ModifiedFunParser(tokens);
 			ParseTree tree = parser.program();
+			
+			FunCheckerVisitor checker = new FunCheckerVisitor(tokens, position);
 			checker.visit(tree);
 			
-			return checker.getListOfCompletionVariables();
-			
-		} catch (Exception e) {
-			
-			e.printStackTrace();
-			System.err.println(e.getLocalizedMessage());
-		}
+			return checker.getCompletionItems();
 		
-		return new ArrayList<String>();
+    	} catch (Exception e) {
+			
+    		System.err.println("ModifiedFunRun:completion: " + e.getLocalizedMessage());
+		}
+    	
+    	return new HashMap<String,String>();
     }
+    
+    
     
     public static String runTheEntireThing (String text) throws Exception {
     	
