@@ -1,51 +1,72 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-
+// Import the required modules and APIs from the 'vscode' and 'vscode-languageclient' packages.
 import * as path from 'path';
 import * as vscode from 'vscode';
-
 import { LanguageClient, LanguageClientOptions, ServerOptions, RevealOutputChannelOn } from 'vscode-languageclient';
 
+// Define the main entry point for the Fun language.
 const main: string = 'StdLauncher';
-const outputChannel = vscode.window.createOutputChannel("Fun");
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+// Create output channels for displaying information and execution output.
+const outputChannel = vscode.window.createOutputChannel("Fun");
+const executionChannel = vscode.window.createOutputChannel("Fun Execution");
+
+// This method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "funplugin" is now active!');
+	// Log a message indicating the extension has been activated.
+	console.log('Extension "funplugin" is now active!');
 
+	// Retrieve the JAVA_HOME environment variable.
 	const { JAVA_HOME } = process.env;
-
 	console.log(`Using java from JAVA_HOME: ${JAVA_HOME}`);
 
 	if (JAVA_HOME) {
+		// Construct the path to the Java executable.
 		let executable: string = path.join(JAVA_HOME, 'bin', 'java');
 
+		// Construct the classpath to the launcher JAR.
 		let classPath = path.join(__dirname, '..', 'launcher', 'launcher.jar');
 		const args: string[] = ['-cp', classPath];
 
+		// Configure the server options.
 		let serverOptions: ServerOptions = {
 			command: executable,
 			args: [...args, main],
 			options: {}
 		};
 
+		// Configure the client options.
 		let clientOptions: LanguageClientOptions = {
 			documentSelector: [{ scheme: 'file', language: 'fun' }],
 			outputChannel: outputChannel,
 			revealOutputChannelOn: RevealOutputChannelOn.Never,
 		};
 
-		let disposable = new LanguageClient('funls', 'Fun Language Server', serverOptions, clientOptions).start();
-	
-		context.subscriptions.push(disposable);
+		// Create the language client and start the client.
+		let client = new LanguageClient('funls', 'Fun Language Server', serverOptions, clientOptions);
+		context.subscriptions.push(client.start());
+
+		// Register the 'fun.run' command.
+		let disposable2 = vscode.commands.registerCommand('fun.run', () => {
+
+			// Get the text from the current editor.
+			let text = vscode.window.activeTextEditor?.document.getText();
+
+			// Send a request to execute the 'run' command with the selected text.
+			client.sendRequest('workspace/executeCommand', { command: 'run', arguments: text}).then((result) => {
+
+				// Display the result in the execution channel.
+				executionChannel.append('result: ' + result);
+			});
+
+        });
+
+		// Register the 'fun.run' command.
+        context.subscriptions.push(disposable2);
 	}
 }
 
-// This method is called when your extension is deactivated
+// This method is called when the extension is deactivated.
 export function deactivate() {
-	console.log('Your extension "funplugin" is now deactivated!')
+	console.log('Extension "funplugin" is now deactivated!')
 }

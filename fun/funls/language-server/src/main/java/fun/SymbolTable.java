@@ -22,7 +22,7 @@ public class SymbolTable<A> {
 	// unique.
 
 	private HashMap<String,A> globals, locals;
-	
+
 	public SymbolTable () {
 		globals = new HashMap<String,A>();
 		locals = null;  // initially disabled
@@ -34,7 +34,6 @@ public class SymbolTable<A> {
 	// (otherwise). Return true iff id is unique.
 		HashMap<String,A> scope =
 			(locals != null ? locals : globals);
-		
 		if (scope.get(id) == null) {
 			scope.put(id, attr);
 			return true;

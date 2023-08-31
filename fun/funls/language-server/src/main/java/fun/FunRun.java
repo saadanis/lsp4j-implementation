@@ -17,7 +17,7 @@ import ast.*;
 
 public class FunRun {
 
-	private static boolean tracing = true;
+	private static boolean tracing = false;
 
 	private static PrintStream out = System.out;
 

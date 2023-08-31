@@ -3,17 +3,26 @@ package mods;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.TokenStream;
 
 import ast.FunParser;
+import mods.DiagnosticError.SyntaxError;
 
+/**
+ * The ModifiedFunParser class extends the FunParser class and provides additional functionality to capture syntax errors during parsing.
+ */
 public class ModifiedFunParser extends FunParser {
 	
+    // List to store syntax errors encountered during parsing.
 	protected List<SyntaxError> _listOfSyntaxErrors = new ArrayList<>(); 
 
+    /**
+     * Constructor for ModifiedFunParser.
+     *
+     * @param input The token stream containing the input tokens.
+     */
 	public ModifiedFunParser(TokenStream input) {
 		super(input);
 	}
@@ -21,61 +30,29 @@ public class ModifiedFunParser extends FunParser {
 	@Override
 	public void notifyErrorListeners(Token offendingToken, String msg, RecognitionException e) {
 		
-		_syntaxErrors++;
-		int line = -1;
-		int charPositionInLine = -1;
-		line = offendingToken.getLine();
-		charPositionInLine = offendingToken.getCharPositionInLine();
-
-		ANTLRErrorListener listener = getErrorListenerDispatch();
-		listener.syntaxError(this, offendingToken, line, charPositionInLine, msg, e);
+		// Call the parent class's method to notify error listeners.
+		super.notifyErrorListeners(offendingToken, msg, e);
 		
+		 // Add the syntax error to the list
 		_listOfSyntaxErrors.add(new SyntaxError(offendingToken, msg));
 	}
 	
+    /**
+     * Get the list of syntax errors encountered during parsing.
+     *
+     * @return The list of syntax errors.
+     */
 	public List<SyntaxError> getListOfSyntaxErrors() {
 		return _listOfSyntaxErrors;
 	}
 	
 	@Override
 	public void reset() {
+		
+		// Call the parent class's method to reset the parser.
 		super.reset();
+		
+		// Reset the list of syntax errors.
 		_listOfSyntaxErrors = new ArrayList<>();
-	}
-	
-	public static class DiagnosticError {
-		public String message;
-		public int line;
-		public int charStartPositionInLine;
-		public int charEndPositionInLine;
-	}
-	
-	public static class SyntaxError extends DiagnosticError {
-		public SyntaxError(Token token, String message) {
-			this.message = message;
-			this.line = token.getLine();
-			this.charStartPositionInLine = token.getCharPositionInLine();
-			this.charEndPositionInLine = charStartPositionInLine + 1 +
-					(token.getStopIndex() - token.getStartIndex());
-		}
-	}
-	
-	public static class ContextualError extends DiagnosticError {
-		public ContextualError(String message, int line, int charStartPositionInLine, int charEndPositionInLine) {
-			this.message = message;
-			this.line = line;
-			this.charStartPositionInLine = charStartPositionInLine;
-			this.charEndPositionInLine = charEndPositionInLine + 1;
-		}
-	}
-	
-	public static class ContextualWarning extends DiagnosticError {
-		public ContextualWarning(String message, int line, int charStartPositionInLine, int charEndPositionInLine) {
-			this.message = message;
-			this.line = line;
-			this.charStartPositionInLine = charStartPositionInLine;
-//			this.charEndPositionInLine = charEndPositionInLine + 1;
-			this.charEndPositionInLine = 1000;
-		}
 	}
 }

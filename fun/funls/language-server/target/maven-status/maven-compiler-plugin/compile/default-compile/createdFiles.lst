@@ -1,3 +1,4 @@
+mods/DiagnosticError$SyntaxError.class
 ast/CalcParser$ExprContext.class
 ast/FunParser$TypeContext.class
 ls/FunWorkspaceService.class
@@ -14,8 +15,8 @@ fun/FunParse$FunException.class
 fun/SVM.class
 fun/FunRun$FunException.class
 fun/FunCheck$FunException.class
-mods/ModifiedFunParser$DiagnosticError.class
 ast/FunParser$NotContext.class
+mods/DiagnosticError$ContextualWarning.class
 ast/FunParser$TrueContext.class
 ast/FunLexer.class
 fun/Type$Primitive.class
@@ -39,6 +40,7 @@ ast/FunParser$BoolContext.class
 ast/CalcParser$ProgContext.class
 ast/FunParser$IdContext.class
 mods/UsageTable.class
+mods/DiagnosticError$ContextualError.class
 ast/FunParser$FormalContext.class
 ast/FunParser$FuncContext.class
 ast/FunParser$NumContext.class
@@ -56,16 +58,15 @@ ls/FunClientLogger.class
 ast/FunParser$ProcContext.class
 ast/FunParser$FalseContext.class
 ast/FunParser$ProgContext.class
+mods/DiagnosticError.class
 ast/CalcLexer.class
 ast/CalcParser$OpContext.class
 ast/FunParser$SeqContext.class
-mods/ModifiedFunParser$ContextualWarning.class
 mods/ModifiedFunRun.class
 ast/CalcParser$VarContext.class
 ast/CalcParser$IdContext.class
 ast/FunVisitor.class
 ast/CalcParser$ParensContext.class
-mods/ModifiedFunParser$SyntaxError.class
 fun/Type.class
 fun/FunEncoderVisitor.class
 ast/FunParser$IntContext.class
@@ -75,4 +76,3 @@ fun/SymbolTable.class
 fun/FunCheck.class
 ast/FunParser.class
 ast/FunBaseVisitor.class
-mods/ModifiedFunParser$ContextualError.class

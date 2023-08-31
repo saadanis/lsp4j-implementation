@@ -7,15 +7,15 @@
     "vscode": "^1.80.0"
   },
   "categories": [
-    "Other"
+    "Debuggers"
   ],
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
         {
-            "command": "extension.helloWorld",
-            "title": "Hello World"
+            "command": "fun.run",
+            "title": "Run Fun"
         }
     ],
     "languages": [{

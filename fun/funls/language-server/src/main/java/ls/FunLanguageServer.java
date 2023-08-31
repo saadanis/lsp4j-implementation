@@ -2,13 +2,10 @@ package ls;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
-import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageClientAware;
@@ -16,70 +13,70 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
+/**
+ * The FunLanguageServer class implements the LanguageServer interface to provide the main functionality of the language server.
+ */
 public class FunLanguageServer implements LanguageServer, LanguageClientAware {
 
 	private TextDocumentService textDocumentService;
 	private WorkspaceService workspaceService;
-	private ClientCapabilities clientCapabilities;
 	LanguageClient languageClient;
 	private int errorCode = 1;
-	
+
+    /**
+     * Constructor for FunLanguageServer.
+     */
 	public FunLanguageServer() {
 		this.textDocumentService = new FunTextDocumentService(this);
-		this.workspaceService = new FunWorkspaceService(this);
+		this.workspaceService = new FunWorkspaceService();
 	}
 
 	@Override
 	public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-		// Initialize the InitializeResult for this LS.
-		final InitializeResult response = new InitializeResult(new ServerCapabilities());
-		
-		// Set the capabilities of the LS to inform the client.
-        response.getCapabilities().setTextDocumentSync(TextDocumentSyncKind.Full);
-        this.clientCapabilities = params.getCapabilities();
-        
-        if (!isDynamicCompletionRegistration()) {
-        response.getCapabilities().setCompletionProvider(new CompletionOptions());
-        }
-        
-        return CompletableFuture.supplyAsync(() -> response);
-	}
 	
+		// Create a new result object with basic server capabilities.
+		final InitializeResult response = new InitializeResult(new ServerCapabilities());
+
+		// Set text document synchronization to Full and set up capabilities.
+		response.getCapabilities().setTextDocumentSync(TextDocumentSyncKind.Full);
+		response.getCapabilities().setCompletionProvider(new CompletionOptions());
+
+		return CompletableFuture.supplyAsync(() -> response);
+	}
+
 	@Override
 	public CompletableFuture<Object> shutdown() {
-		// If shutdown request comes from client, set the error code to 0.
+		
+		// Set the error code to 0 and return.
 		errorCode = 0;
 		return CompletableFuture.supplyAsync(Object::new);
 	}
 
 	@Override
 	public void exit() {
-		// Kill the LS on exit request from client.
+		
+        // Exit the system with the given error code.
 		System.exit(errorCode);
 	}
 
 	@Override
 	public TextDocumentService getTextDocumentService() {
-        return this.textDocumentService;
+		return this.textDocumentService;
 	}
 
 	@Override
 	public WorkspaceService getWorkspaceService() {
-        return this.workspaceService;
+		return this.workspaceService;
 	}
-	
+
 	@Override
 	public void connect(LanguageClient client) {
-		// Get the client which started this LS.
+		
+        // Connect the language client to the server.
 		this.languageClient = client;
+		
+        // Initialize the FunClientLogger.
 		FunClientLogger.getInstance().initialize(this.languageClient);
 	}
-	
-    private boolean isDynamicCompletionRegistration() {
-        TextDocumentClientCapabilities textDocumentCapabilities =
-                clientCapabilities.getTextDocument();
-        return textDocumentCapabilities != null && textDocumentCapabilities.getCompletion() != null
-                && Boolean.FALSE.equals(textDocumentCapabilities.getCompletion().getDynamicRegistration());
-    }
 
 }

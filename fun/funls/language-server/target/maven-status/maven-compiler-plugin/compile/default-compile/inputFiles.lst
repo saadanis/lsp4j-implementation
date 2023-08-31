@@ -1,5 +1,6 @@
 /Users/saad/Documents/GitHub/lsp4j-implementation/fun/funls/language-server/src/main/java/ls/FunWorkspaceService.java
 /Users/saad/Documents/GitHub/lsp4j-implementation/fun/funls/language-server/src/main/java/ls/FunTextDocumentService.java
+/Users/saad/Documents/GitHub/lsp4j-implementation/fun/funls/language-server/src/main/java/mods/DiagnosticError.java
 /Users/saad/Documents/GitHub/lsp4j-implementation/fun/funls/language-server/src/main/java/fun/SymbolTable.java
 /Users/saad/Documents/GitHub/lsp4j-implementation/fun/funls/language-server/src/main/java/ast/.antlr/CalcLexer.java
 /Users/saad/Documents/GitHub/lsp4j-implementation/fun/funls/language-server/src/main/java/ls/FunClientLogger.java

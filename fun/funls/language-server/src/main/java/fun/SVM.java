@@ -148,7 +148,7 @@ public class SVM {
 	// CODE INTERPRETATION
 
 	private static Scanner in = new Scanner(System.in);
-	private static PrintStream out = System.err;
+	private static PrintStream out = System.out;
 
 	public void interpret (boolean tracing) {
 	// Interpret the program starting at offset 0 

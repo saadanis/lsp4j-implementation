@@ -5,6 +5,8 @@
 // Based on a previous version developed by
 // David Watt and Simon Gay (University of Glasgow).
 //
+// Modified by Saad Anis.
+//
 //////////////////////////////////////////////////////////////
 
 package fun;
@@ -19,9 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 
 import ast.*;
+import mods.DiagnosticError.ContextualError;
+import mods.DiagnosticError.ContextualWarning;
 import mods.UsageTable;
-import mods.ModifiedFunParser.ContextualError;
-import mods.ModifiedFunParser.ContextualWarning;
 
 public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements FunVisitor<Type> {
 
@@ -33,9 +35,6 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	
 	protected CommonTokenStream tokens;
 	protected Position position;
-	
-//	private List<String> completionVariables = new ArrayList<>();
-//	private List<Type> completionTypes = new ArrayList<>();
 	
 	private HashMap<String, String> completionItems = new HashMap<String, String>();
 	private SymbolTable<Integer> variableTable = new SymbolTable<Integer>();
@@ -51,8 +50,7 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 		position = pos;
 	}
 
-	private void reportError (String message,
-	                          ParserRuleContext ctx) {
+	private void reportError (String message, ParserRuleContext ctx) {
 	// Print an error message relating to the given 
 	// part of the AST.
 	    Interval interval = ctx.getSourceInterval();
@@ -99,14 +97,6 @@ public class FunCheckerVisitor extends AbstractParseTreeVisitor<Type> implements
 	public List<ContextualWarning> getListOfContextualWarnings() {
 		return contextualWarnings;
 	}
-	
-//	public List<String> getListOfCompletionVariables() {
-//		return completionVariables;
-//	}
-//	
-//	public List<Type> getListOfCompletionTypes() {
-//		return completionTypes;
-//	}
 	
 	public HashMap<String, String> getCompletionItems() {
 		return completionItems;

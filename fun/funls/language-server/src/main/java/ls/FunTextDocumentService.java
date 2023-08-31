@@ -1,38 +1,38 @@
 package ls;
 
-import java.io.File;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.antlr.v4.runtime.Vocabulary;
 import org.eclipse.lsp4j.*;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
-import mods.ModifiedFunParser;
-import mods.ModifiedFunParser.ContextualError;
-import mods.ModifiedFunParser.ContextualWarning;
-import mods.ModifiedFunParser.DiagnosticError;
-import mods.ModifiedFunParser.SyntaxError;
+import mods.DiagnosticError;
+import mods.DiagnosticError.ContextualError;
+import mods.DiagnosticError.ContextualWarning;
 import mods.ModifiedFunRun;
 
-//import com.saadanis.calc.ast.CalcParser.SyntaxError;
-//import com.saadanis.calc.calc.CalcRun;
-
+/**
+ * The FunTextDocumentService class implements the TextDocumentService interface to handle various
+ * operations related to text documents, such as opening, changing, and closing a document, as well
+ * as providing completion and publishing diagnostics.
+ */
 public class FunTextDocumentService implements TextDocumentService {
 
 	private FunLanguageServer languageServer;
 	private FunClientLogger clientLogger;
 	
 	private String documentText = "";
-	private String[] keywords = { "else", "false", "true", "func", "if",
-			"proc", "return", "not", "while", "bool", "int"};
+	
+	// Hard-coded keywords and types of the Fun language.
+	private String[] keywords = { "else", "false", "true", "func", "if", "proc", "return", "not", "while"};
 	private String[] types = {"bool", "int"};
 	
+	/**
+     * Constructor for FunWorkspaceService.
+     */
 	public FunTextDocumentService(FunLanguageServer languageServer) {
         this.languageServer = languageServer;
         this.clientLogger = FunClientLogger.getInstance();
@@ -41,12 +41,18 @@ public class FunTextDocumentService implements TextDocumentService {
 	@Override
 	public void didOpen(DidOpenTextDocumentParams params) {
 		
+		this.clientLogger.logMessage("FunTextDocumentService:didOpen");
+		
+		// Get the URI of the opened text document.
 		String fileUri = params.getTextDocument().getUri();
 		
-		this.clientLogger.logMessage("Operation '" + "text/didOpen" +
-                "' {fileUri: '" + fileUri + "'} opened");
+		// Check if the text document is not null.
 		if (params.getTextDocument() != null) {
+			
+	        // Retrieve the content of the text document.
 			documentText = params.getTextDocument().getText();
+			
+			// Parse the content and publish diagnostics.
 			parseAndPublishDiagnostics(fileUri, documentText);
 		}
 	
@@ -55,14 +61,19 @@ public class FunTextDocumentService implements TextDocumentService {
 	@Override
 	public void didChange(DidChangeTextDocumentParams params) {
 		
+		this.clientLogger.logMessage("FunTextDocumentService:didChange");
+		
+		// Get the URI of the changed text document.
 		String fileUri = params.getTextDocument().getUri();
 		
-		this.clientLogger.logMessage("Operation '" + "text/didChange" +
-                "' {fileUri: '" + fileUri + "'} Changed");
-		
+		// Check if there are content changes.
 		if (!params.getContentChanges().isEmpty()) {
+			
+			// Get the changed text content.
 			String changedText = params.getContentChanges().get(0).getText();
 			documentText = changedText;
+			
+			// Parse the changed content and publish diagnostics.
 			parseAndPublishDiagnostics(fileUri, documentText);
 		}
 		
@@ -70,18 +81,12 @@ public class FunTextDocumentService implements TextDocumentService {
 
 	@Override
 	public void didClose(DidCloseTextDocumentParams params) {
-		this.clientLogger.logMessage("Operation '" + "text/didClose" +
-                "' {fileUri: '" + params.getTextDocument().getUri() + "'} Closed");
-
+		this.clientLogger.logMessage("FunTextDocumentService:didClose");
 	}
 
 	@Override
 	public void didSave(DidSaveTextDocumentParams params) {
-		
-		String fileUri = params.getTextDocument().getUri();
-		
-        this.clientLogger.logMessage("Operation '" + "text/didSave" +
-                "' {fileUri: '" + fileUri + "'} Saved");
+		this.clientLogger.logMessage("FunTextDocumentService:didSave");
 	}
 	
 	@Override
@@ -89,15 +94,23 @@ public class FunTextDocumentService implements TextDocumentService {
 		
         return CompletableFuture.supplyAsync(() -> {
         	
+        	// Create a list to store completion items.
             List<CompletionItem> completionItems = new ArrayList<>();
             
+            // Get the current cursor position in the text document.
 			Position position = completionParams.getPosition();
+			
+	        // Get a map of completion variables and their types.
 			HashMap<String,String> completionVariables = ModifiedFunRun.completion(documentText, position);
           
+	        // Iterate through the completion variables and create corresponding completion items.
 			completionVariables.forEach((id, type) -> {
+				
+	            // Create a new completion item.
 				CompletionItem completionItem = new CompletionItem();
                 completionItem.setLabel(id);
                 
+                // Determine the kind of completion item based on the variable type.
                 if (type.equals("int") || type.equals("bool")) {
                 	completionItem.setKind(CompletionItemKind.Variable);
                 	completionItem.setInsertText(id);
@@ -111,52 +124,51 @@ public class FunTextDocumentService implements TextDocumentService {
                 	}
                 }
                 
+                // Add the completion item to the list.
                 completionItems.add(completionItem);
 			});
             
+			// Add predefined keywords as completion items.
             for (String keyword: keywords) {
-            	CompletionItem completionItem = new CompletionItem();
-                completionItem.setInsertText(keyword);
-                completionItem.setLabel(keyword);
-                completionItem.setKind(CompletionItemKind.Keyword);
-                completionItems.add(completionItem);
+                completionItems.add(createCompletionItem(keyword, CompletionItemKind.Keyword));
             }
             
+            // Add predefined types as completion items.
             for (String type: types) {
-            	CompletionItem completionItem = new CompletionItem();
-                completionItem.setInsertText(type);
-                completionItem.setLabel(type);
-                completionItem.setKind(CompletionItemKind.Class);
-                completionItems.add(completionItem);
+                completionItems.add(createCompletionItem(type, CompletionItemKind.Class));
             }
-            
-//         	main function snippet generation completion item.
-//            {
-//                CompletionItem completionItem = new CompletionItem();
-//                completionItem.setInsertText("main():\n\t$1\n.");
-//                completionItem.setLabel("main()");
-//                completionItem.setDetail("Generate main() snippet.");
-//                completionItem.setKind(CompletionItemKind.Snippet);
-//                completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
-//                completionItems.add(completionItem);
-//            }
             
             // Return the list of completion items.
             return Either.forLeft(completionItems);
         });
 	}
-	
 
-	@Override
-	public CompletableFuture<SemanticTokens> semanticTokensFull(SemanticTokensParams params) {
-		// TODO Auto-generated method stub
+	/**
+	 * Creates a CompletionItem based on the provided text and kind.
+	 *
+	 * @param text The text to be inserted when the completion item is selected.
+	 * @param kind The kind of completion item, indicating its category (variable, function, etc.).
+	 * @return A new CompletionItem with the specified properties.
+	 */
+	private CompletionItem createCompletionItem(String text, CompletionItemKind kind) {
 		
-		this.clientLogger.logMessage(params.toString());
+		// Create a new CompletionItem instance.
+		CompletionItem completionItem = new CompletionItem();
 		
-		return TextDocumentService.super.semanticTokensFull(params);
+		// Set the completionItems attributes.
+		completionItem.setInsertText(text);
+        completionItem.setLabel(text);
+        completionItem.setKind(kind);
+        
+		return completionItem;
 	}
 
-	
+	/**
+	 * Parses the provided text, detects errors using ModifiedFunRun, and publishes diagnostics for the detected errors.
+	 *
+	 * @param fileUri The URI of the text document.
+	 * @param text The content of the text document.
+	 */
 	private void parseAndPublishDiagnostics(String fileUri, String text) {
 		
 		List<Diagnostic> diagnostics = new ArrayList<>();
@@ -164,8 +176,8 @@ public class FunTextDocumentService implements TextDocumentService {
 		try {
 			
 			List <DiagnosticError> errors = ModifiedFunRun.diagnostics(text);
-//			
-//			// For each syntax error, log the error and create a diagnostic.
+
+			// For each syntax error, log the error and create a diagnostic.
 			for (DiagnosticError error: errors) {
 				
 				// Get the error information.
@@ -174,6 +186,7 @@ public class FunTextDocumentService implements TextDocumentService {
 				int charStartPositionInLine = error.charStartPositionInLine;
 				int charEndPositionInLine = error.charEndPositionInLine;
 				
+				// Determine the severity and type of the error.
 				DiagnosticSeverity severity = DiagnosticSeverity.Error;
 				String errorType = "";
 				if (error instanceof ContextualWarning) {
@@ -201,6 +214,8 @@ public class FunTextDocumentService implements TextDocumentService {
 		} catch (Exception e) {
 			this.clientLogger.logMessage("Caught Exception: " + e.getMessage());
 		} finally {
+			
+			// Publish the detected diagnostics to the language client.
 	        PublishDiagnosticsParams publishDiagnosticsParams = new PublishDiagnosticsParams(fileUri, diagnostics);
 	        languageServer.languageClient.publishDiagnostics(publishDiagnosticsParams);
 		}
